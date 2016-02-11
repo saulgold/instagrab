@@ -1,0 +1,135 @@
+//TODO : export the intersection rects
+
+//ManTracking.cpp : Defines the entry point for the console application.
+//
+#include "stdafx.h"
+#include "opencv2/opencv.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include <iostream>
+#include "opencv2/videoio/videoio.hpp"
+#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv2/features2d/features2d.hpp>
+#include "ml.h"
+#include <vector>
+#include <string>
+#include <sstream>
+#include <fstream>
+#include "tracking\tracking.hpp"
+
+#include <Windows.h>
+
+#include <stdlib.h>
+#include <cstring>
+#include <Wininet.h>
+#include <tchar.h>
+#include <time.h>
+#include <ctime>
+#include <iomanip>
+
+
+#pragma comment (lib, "wininet.lib")
+
+using namespace std;
+
+using namespace cv;
+
+
+
+
+int main(){
+	while (1){
+		//time
+		time_t timev;
+
+		time(&timev);
+		string value;
+
+
+		HINTERNET connect = InternetOpen(_T("MyBrowser"), INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+
+		if (!connect){
+			cout << "connection failed or syntax error";
+			return 0;
+		}
+
+		HINTERNET OpenAddress1 = InternetOpenUrl(connect,
+			_T("https://api.instagram.com/v1/tags/london/media/recent?access_token=1138136632.1677ed0.d6f3a34dab8a431cbeb604ac93a6d13b")
+			,
+			NULL, 0, INTERNET_FLAG_PRAGMA_NOCACHE | INTERNET_FLAG_KEEP_CONNECTION
+			| INTERNET_FLAG_SECURE, 0);
+
+		/*
+		HINTERNET OpenAddress1 = InternetOpenUrl(connect,
+		_T("https://api.instagram.com/v1/tags/muswellhill/media/recent?access_token=1138136632.1677ed0.d6f3a34dab8a431cbeb604ac93a6d13b"),
+		NULL, 0, INTERNET_FLAG_PRAGMA_NOCACHE|INTERNET_FLAG_KEEP_CONNECTION,0);
+		*/
+		if (!OpenAddress1){
+			DWORD ErrorNum = GetLastError();
+			cout << "Failed to open URL \nError No: " << ErrorNum;
+			InternetCloseHandle(connect);
+			return 0;
+		}
+
+		char DataReceived1[4096] = { '\0' };
+		char DataReceived2[4096] = { '\0' };
+		DWORD NumberOfBytesRead = 0;
+
+		while (InternetReadFile(OpenAddress1, DataReceived1, 4096, &NumberOfBytesRead) && NumberOfBytesRead){
+			//cout << DataReceived1 << endl;
+		}
+
+		string data = string(DataReceived1);
+		//	cout << data << endl;
+		size_t found = data.find("standard_resolution");
+
+		string url;
+		int n = 0;
+		size_t DataLength = data.length() - found;
+		int i = 0;
+		
+		while (data[n] != '?'){
+			n = found + 34 + i;
+			url.push_back(data[n]);
+			i++;
+			n = found + 34 + i;
+		}
+		char s = url.back();
+		
+		//if url is a jpg then show otherwise restart
+		if ( s == 'g'){
+			VideoCapture cap;
+			Mat img;
+			string url2 = "http";
+			string urlt = url2 + url;
+			urlt.erase(remove(urlt.begin(), urlt.end(), '\\'), urlt.end());
+			cout << urlt << endl;
+			//string urltest = "http:\/\/scontent.cdninstagram.com\/t51.2885-15\/s640x640\/sh0.08\/e35\/12628133_552743711558449_1008436076_n.jpg";
+			//cout << urltest << endl;
+			cap.open(urlt);
+			//cap.open("http:\/\/scontent.cdninstagram.com\/t51.2885-15\/s640x640\/sh0.08\/e35\/12628133_552743711558449_1008436076_n.jpg");
+
+			cap.read(img);
+
+			imshow("image", img);
+			waitKey(30);
+			/*
+			istringstream iss(DataReceived1);
+
+			for (int i = 0; i < 8; i++){
+			getline(iss, value, '}');
+			cout << value << endl;
+
+			}
+			cout << value << endl; //" "<< ctime(&timev) << endl;
+			*/
+
+
+			InternetCloseHandle(OpenAddress1);
+			InternetCloseHandle(connect);
+			Sleep(1000);
+		}
+
+	}
+	system("PAUSE");
+
+}
